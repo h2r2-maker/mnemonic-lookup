@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#173b35">
+  <meta name="description" content="Scan mnemonic codes or browse posters to find quantities.">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="styles.css">
+  <title>Mnemonic Lookup</title>
+</head>
+<body>
+  <header class="topbar">
+    <button id="homeButton" class="home-button" aria-label="Return to home" hidden>⌂ Home</button>
+    <span class="brand">Mnemonic Lookup</span>
+  </header>
+  <main>
+    <section id="homeScreen" class="screen">
+      <div class="hero">
+        <div class="hero-icon">⌕</div>
+        <h1>Find a poster</h1>
+        <p>Scan a mnemonic code or browse the poster gallery.</p>
+      </div>
+      <button id="scanChoice" class="choice primary"><span class="choice-icon">▣</span><span><strong>1. Scan Code</strong><small>Use your camera to read a mnemonic</small></span><span class="chevron">›</span></button>
+      <button id="browseChoice" class="choice"><span class="choice-icon">▦</span><span><strong>2. Look Up Poster</strong><small>Browse and select a poster</small></span><span class="chevron">›</span></button>
+      <p class="hint">Tip: allow camera access when prompted. Camera scanning requires HTTPS.</p>
+    </section>
+
+    <section id="scanScreen" class="screen" hidden>
+      <h1>Scan mnemonic code</h1>
+      <p class="muted">Hold the code steady and keep it well lit.</p>
+      <div class="camera-wrap">
+        <video id="cameraVideo" autoplay playsinline muted></video>
+        <div class="camera-frame"></div>
+      </div>
+      <button id="captureButton" class="primary full">Capture and read text</button>
+      <p id="scanStatus" class="status" role="status">Starting camera…</p>
+      <div class="manual-entry">
+        <label for="manualCode">Or enter the code manually</label>
+        <div class="inline-form"><input id="manualCode" autocomplete="off" placeholder="Enter mnemonic code"><button id="manualLookup">Look up</button></div>
+      </div>
+    </section>
+
+    <section id="galleryScreen" class="screen" hidden>
+      <h1>Look up poster</h1>
+      <p class="muted">Scroll through the posters and tap one to view its code and quantity.</p>
+      <input id="gallerySearch" class="search" type="search" placeholder="Search posters or codes…" aria-label="Search posters or codes">
+      <div id="galleryGrid" class="gallery-grid"></div>
+    </section>
+
+    <section id="resultScreen" class="screen" hidden>
+      <button id="backButton" class="text-button">← Back</button>
+      <div id="resultContent"></div>
+      <button id="anotherScanButton" class="primary full">Scan another code</button>
+      <button id="browseAgainButton" class="secondary full">Browse posters</button>
+    </section>
+
+    <section id="notFoundScreen" class="screen" hidden>
+      <div class="not-found-icon">?</div>
+      <h1>No match found</h1>
+      <p id="notFoundMessage" class="muted">We couldn't match that text to a code in the lookup table.</p>
+      <label for="retryCode">Check or correct the code</label>
+      <div class="inline-form"><input id="retryCode" autocomplete="off" placeholder="Mnemonic code"><button id="retryLookup">Try again</button></div>
+      <button id="returnHome" class="secondary full">Return to home</button>
+    </section>
+  </main>
+  <footer>Mnemonic Lookup <span id="dataStatus">Loading lookup data…</span></footer>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
