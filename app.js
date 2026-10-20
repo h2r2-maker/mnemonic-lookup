@@ -18,9 +18,23 @@ function stopCamera() {
 function normalizeCode(s) {
   return String(s || "").toUpperCase().replace(/[–—]/g,"-").replace(/\s+/g,"").trim();
 }
+function compactCode(s) {
+  // OCR can insert spaces or miss punctuation, so compare only letters and digits.
+  return String(s || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+}
 function findRecord(code) {
   const normalized = normalizeCode(code);
   return records.find(r => normalizeCode(r.code) === normalized);
+}
+function findRecordInOcr(ocrText) {
+  // Only accept a string that corresponds to a code in our lookup table.
+  // Ignore surrounding words, line breaks, spaces, and punctuation in the OCR result.
+  const compactText = compactCode(ocrText);
+  const matches = records
+    .map(record => ({ record, compact: compactCode(record.code) }))
+    .filter(item => item.compact && compactText.includes(item.compact))
+    .sort((a, b) => b.compact.length - a.compact.length);
+  return matches.length ? matches[0].record : null;
 }
 function escapeHtml(s) {
   return String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -84,14 +98,11 @@ async function captureAndRead() {
     canvas.getContext("2d").drawImage(video,0,0);
     const result = await Tesseract.recognize(canvas, "eng");
     const text = result.data.text || "";
-    // Match known codes against OCR output first; OCR may include other surrounding text.
-    const match = records.find(r => normalizeCode(text).includes(normalizeCode(r.code)));
+    // Search only for lookup-table codes. Any unrelated text in the photo is ignored.
+    // Compact alphanumeric matching tolerates OCR-added spaces or missed punctuation.
+    const match = findRecordInOcr(text);
     if (match) showResult(match);
-    else {
-      const lines = text.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
-      const candidate = lines.sort((a,b)=>a.length-b.length)[0] || text.trim();
-      showNotFound(candidate.slice(0,80));
-    }
+    else showNotFound("");
   } catch (e) {
     $("scanStatus").textContent = "Couldn't read the image. Try better lighting or enter the code manually.";
   } finally { $("captureButton").disabled = false; }
