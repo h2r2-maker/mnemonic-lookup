@@ -27,12 +27,15 @@ function findRecord(code) {
   return records.find(r => normalizeCode(r.code) === normalized);
 }
 function findRecordInOcr(ocrText) {
-  // Only accept a string that corresponds to a code in our lookup table.
-  // Ignore surrounding words, line breaks, spaces, and punctuation in the OCR result.
-  const compactText = compactCode(ocrText);
-  const matches = records
-    .map(record => ({ record, compact: compactCode(record.code) }))
-    .filter(item => item.compact && compactText.includes(item.compact))
+  // Match known lookup codes as separate text strings, allowing OCR to insert
+  // spaces or punctuation between code characters, but not embedded in words.
+  const text = String(ocrText || "").toUpperCase().replace(/[–—]/g, "-");
+  const candidates = records.map(record => {
+    const compact = compactCode(record.code);
+    const pattern = compact.split("").join("[\\s\\W_]*");
+    return { record, compact, regex: new RegExp(`(?:^|[^A-Z0-9])${pattern}(?=$|[^A-Z0-9])`, "i") };
+  }).filter(item => item.compact);
+  const matches = candidates.filter(item => item.regex.test(text))
     .sort((a, b) => b.compact.length - a.compact.length);
   return matches.length ? matches[0].record : null;
 }
