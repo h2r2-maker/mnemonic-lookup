@@ -43,11 +43,9 @@ function escapeHtml(s) {
   return String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 }
 function posterArt(record, compact=false) {
-  //if (record.image) return `<img class="${compact ? "poster-art" : "result-art"}" src="${escapeHtml(record.image)}" alt="${escapeHtml(record.title || record.code)}" onerror="this.style.display='none'">`;
-  //return `<div class="${compact ? "poster-art" : "poster-art result-placeholder"}"><span class="poster-symbol">▧</span><span>${escapeHtml(record.title || "Poster")}</span><small>Replace with your poster image</small></div>`;
-  if (record.image) return `<img class="${compact ? "poster-art" : "result-art"}" src="${escapeHtml(record.image)}" onerror="this.style.display='none'">`;
-  return `<div class="${compact ? "poster-art" : "poster-art result-placeholder"}"><span class="poster-symbol">▧</span><span>${escapeHtml("Poster")}</span><small>Replace with your poster image</small></div>`;
-  
+ if (record.image) return `<img class="${compact ? "poster-art" : "result-art"}" src="${escapeHtml(record.image)}" alt="${escapeHtml(record.title || record.code)}" onerror="this.style.display='none'">`;
+ return `<div class="${compact ? "poster-art" : "poster-art result-placeholder"}"><span class="poster-symbol">▧</span><span>${escapeHtml(record.title || "Poster")}</span><small>Replace with your poster image</small></div>`;
+   
 }
 function showResult(record) {
   if (!record) return showNotFound("");
@@ -71,11 +69,9 @@ function lookup(code) {
 function renderGallery(filter="") {
   const f = filter.toLowerCase().trim();
   const found = records.filter(r => `${r.code} ${r.title || ""}`.toLowerCase().includes(f));
-  //$("galleryGrid").innerHTML = found.map((r,i) => `<button class="poster-card" data-code="${escapeHtml(r.code)}">
-    //${posterArt(r,true)}<div class="poster-caption"><strong>${escapeHtml(r.title || r.code)}</strong><small>${escapeHtml(r.code)}</small></div></button>`).join("");
   $("galleryGrid").innerHTML = found.map((r,i) => `<button class="poster-card" data-code="${escapeHtml(r.code)}">
-    ${posterArt(r,true)}<div class="poster-caption"><strong>${escapeHtml("")}</strong><small>${escapeHtml("")}</small></div></button>`).join("");
-  if (!found.length) $("galleryGrid").innerHTML = `<p class="muted">No posters match your search.</p>`;
+    ${posterArt(r,true)}<div class="poster-caption"><strong>${escapeHtml(r.title || r.code)}</strong><small>${escapeHtml(r.code)}</small></div></button>`).join("");
+    if (!found.length) $("galleryGrid").innerHTML = `<p class="muted">No posters match your search.</p>`;
   $("galleryGrid").querySelectorAll("button[data-code]").forEach(b => b.addEventListener("click", () => lookup(b.dataset.code)));
 }
 async function startCamera() {
