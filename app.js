@@ -43,9 +43,11 @@ function escapeHtml(s) {
   return String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 }
 function posterArt(record, compact=false) {
-  if (record.image) return `<img class="${compact ? "poster-art" : "result-art"}" src="${escapeHtml(record.image)}" alt="${escapeHtml(record.title || record.code)}" onerror="this.style.display='none'">`;
-  return `<div class="${compact ? "poster-art" : "poster-art result-placeholder"}"><span class="poster-symbol">▧</span><span>${escapeHtml(record.title || "Poster")}</span><small>Replace with your poster image</small></div>`;
-
+  //if (record.image) return `<img class="${compact ? "poster-art" : "result-art"}" src="${escapeHtml(record.image)}" alt="${escapeHtml(record.title || record.code)}" onerror="this.style.display='none'">`;
+  //return `<div class="${compact ? "poster-art" : "poster-art result-placeholder"}"><span class="poster-symbol">▧</span><span>${escapeHtml(record.title || "Poster")}</span><small>Replace with your poster image</small></div>`;
+  if (record.image) return `<img class="${compact ? "poster-art" : "result-art"}" src="${escapeHtml(record.image)}" onerror="this.style.display='none'">`;
+  return `<div class="${compact ? "poster-art" : "poster-art result-placeholder"}"><span class="poster-symbol">▧</span><span>${escapeHtml("Poster")}</span><small>Replace with your poster image</small></div>`;
+  
 }
 function showResult(record) {
   if (!record) return showNotFound("");
