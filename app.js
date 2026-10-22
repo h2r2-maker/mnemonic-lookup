@@ -102,12 +102,23 @@ function findRecordInOcr(ocrText) {
 
   return bestDistance <= 2 ? bestMatch : null;
 }
+function findRecord(code) {
+  const normalized = normalizeCode(code);
+
+  return records.find(
+    r => normalizeCode(r.code) === normalized
+  ) || null;
+}
 function escapeHtml(s) {
   return String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 }
 function posterArt(record, compact=false) {
  if (record.image) return `<img class="${compact ? "poster-art" : "result-art"}" src="${escapeHtml(record.image)}" onerror="this.style.display='none'">`;
- return `<div class="${compact ? "poster-art" : "poster-art result-placeholder"}"><span class="poster-symbol">▧</span><span>${Poster}</span><small>Replace with your poster image</small></div>`;
+ return `<div class="${compact ? "poster-art" : "poster-art result-placeholder"}">
+   <span class="poster-symbol">▧</span>
+   <span>Poster</span>
+   <small>Replace with your poster image</small>
+  </div>`;
    
 }
 function showResult(record) {
