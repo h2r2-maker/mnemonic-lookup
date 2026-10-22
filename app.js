@@ -19,25 +19,88 @@ function normalizeCode(s) {
   return String(s || "").toUpperCase().replace(/[–—]/g,"-").replace(/\s+/g,"").trim();
 }
 function compactCode(s) {
-  // OCR can insert spaces or miss punctuation, so compare only letters and digits.
-  return String(s || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+  return String(s || "")
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, "");
 }
-function findRecord(code) {
-  const normalized = normalizeCode(code);
-  return records.find(r => normalizeCode(r.code) === normalized);
+
+function normalizeOcrCode(s) {
+  return String(s || "")
+    .toUpperCase()
+    .replace(/[O]/g, "0")
+    .replace(/[IL]/g, "1")
+    .replace(/[^A-Z0-9]/g, "");
 }
+
+function stripOcrNoise(text) {
+  return String(text || "")
+    .replace(/\b\d{6}\b/g, " ")
+    .replace(/PRINTED\s+IN\s+[A-Z]+/gi, " ")
+    .replace(/VIETNAM/gi, " ")
+    .replace(/CHINA/gi, " ")
+    .replace(/MADE\s+IN\s+[A-Z]+/gi, " ");
+}
+
+function levenshtein(a, b) {
+  const matrix = [];
+
+  for (let i = 0; i <= b.length; i++) {
+    matrix[i] = [i];
+  }
+
+  for (let j = 0; j <= a.length; j++) {
+    matrix[0][j] = j;
+  }
+
+  for (let i = 1; i <= b.length; i++) {
+    for (let j = 1; j <= a.length; j++) {
+      if (b.charAt(i - 1) === a.charAt(j - 1)) {
+        matrix[i][j] = matrix[i - 1][j - 1];
+      } else {
+        matrix[i][j] = Math.min(
+          matrix[i - 1][j - 1] + 1,
+          matrix[i][j - 1] + 1,
+          matrix[i - 1][j] + 1
+        );
+      }
+    }
+  }
+
+  return matrix[b.length][a.length];
+}
+
 function findRecordInOcr(ocrText) {
-  // Match known lookup codes as separate text strings, allowing OCR to insert
-  // spaces or punctuation between code characters, but not embedded in words.
-  const text = String(ocrText || "").toUpperCase().replace(/[–—]/g, "-");
-  const candidates = records.map(record => {
-    const compact = compactCode(record.code);
-    const pattern = compact.split("").join("[\\s\\W_]*");
-    return { record, compact, regex: new RegExp(`(?:^|[^A-Z0-9])${pattern}(?=$|[^A-Z0-9])`, "i") };
-  }).filter(item => item.compact);
-  const matches = candidates.filter(item => item.regex.test(text))
-    .sort((a, b) => b.compact.length - a.compact.length);
-  return matches.length ? matches[0].record : null;
+  const cleaned = stripOcrNoise(ocrText);
+  const normalizedText = normalizeOcrCode(cleaned);
+
+  let bestMatch = null;
+  let bestDistance = 999;
+
+  for (const record of records) {
+    const target = normalizeOcrCode(record.code);
+
+    if (!target) continue;
+
+    if (normalizedText.includes(target)) {
+      return record;
+    }
+
+    for (let i = 0; i <= normalizedText.length - target.length; i++) {
+      const candidate = normalizedText.substring(
+        i,
+        i + target.length
+      );
+
+      const distance = levenshtein(candidate, target);
+
+      if (distance < bestDistance) {
+        bestDistance = distance;
+        bestMatch = record;
+      }
+    }
+  }
+
+  return bestDistance <= 2 ? bestMatch : null;
 }
 function escapeHtml(s) {
   return String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -92,26 +155,120 @@ async function startCamera() {
     $("scanStatus").textContent = "Camera permission was denied or unavailable. You can enter the code manually below.";
   }
 }
+function rotateCanvas(sourceCanvas, degrees) {
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+
+  if (Math.abs(degrees) === 90) {
+    canvas.width = sourceCanvas.height;
+    canvas.height = sourceCanvas.width;
+  } else {
+    canvas.width = sourceCanvas.width;
+    canvas.height = sourceCanvas.height;
+  }
+
+  ctx.translate(canvas.width / 2, canvas.height / 2);
+  ctx.rotate(degrees * Math.PI / 180);
+
+  ctx.drawImage(
+    sourceCanvas,
+    -sourceCanvas.width / 2,
+    -sourceCanvas.height / 2
+  );
+
+  return canvas;
+}
 async function captureAndRead() {
   const video = $("cameraVideo");
-  if (!video.videoWidth) { $("scanStatus").textContent = "Camera isn't ready yet. Try manual entry below."; return; }
-  if (!window.Tesseract) { $("scanStatus").textContent = "Text recognition library didn't load. Enter the code manually."; return; }
+
+  if (!video.videoWidth) {
+    $("scanStatus").textContent =
+      "Camera isn't ready yet. Try manual entry below.";
+    return;
+  }
+
+  if (!window.Tesseract) {
+    $("scanStatus").textContent =
+      "Text recognition library didn't load. Enter the code manually.";
+    return;
+  }
+
   $("captureButton").disabled = true;
-  $("scanStatus").textContent = "Reading text… this can take a few seconds.";
+  $("scanStatus").textContent =
+    "Scanning poster code...";
+
   try {
     const canvas = document.createElement("canvas");
-    canvas.width = video.videoWidth; canvas.height = video.videoHeight;
-    canvas.getContext("2d").drawImage(video,0,0);
-    const result = await Tesseract.recognize(canvas, "eng");
-    const text = result.data.text || "";
-    // Search only for lookup-table codes. Any unrelated text in the photo is ignored.
-    // Compact alphanumeric matching tolerates OCR-added spaces or missed punctuation.
-    const match = findRecordInOcr(text);
-    if (match) showResult(match);
-    else showNotFound("");
+
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+
+    const ctx = canvas.getContext("2d");
+
+    ctx.drawImage(video, 0, 0);
+
+    //
+    // Center crop to eliminate wall/background noise
+    //
+
+    const cropCanvas = document.createElement("canvas");
+
+    cropCanvas.width = canvas.width * 0.6;
+    cropCanvas.height = canvas.height * 0.6;
+
+    const cropCtx = cropCanvas.getContext("2d");
+
+    cropCtx.drawImage(
+      canvas,
+      canvas.width * 0.2,
+      canvas.height * 0.2,
+      canvas.width * 0.6,
+      canvas.height * 0.6,
+      0,
+      0,
+      cropCanvas.width,
+      cropCanvas.height
+    );
+
+    const variants = [
+      cropCanvas,
+      rotateCanvas(cropCanvas, 90),
+      rotateCanvas(cropCanvas, -90)
+    ];
+
+    let combinedText = "";
+
+    for (const variant of variants) {
+      const result = await Tesseract.recognize(
+        variant,
+        "eng",
+        {
+          tessedit_char_whitelist:
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.-"
+        }
+      );
+
+      combinedText += "\n" + (result.data.text || "");
+    }
+
+    console.log("OCR TEXT:", combinedText);
+
+    const match = findRecordInOcr(combinedText);
+
+    if (match) {
+      showResult(match);
+    } else {
+      showNotFound("");
+    }
+
   } catch (e) {
-    $("scanStatus").textContent = "Couldn't read the image. Try better lighting or enter the code manually.";
-  } finally { $("captureButton").disabled = false; }
+    console.error(e);
+
+    $("scanStatus").textContent =
+      "Couldn't read the image. Try moving closer to the mnemonic code.";
+  } finally {
+    $("captureButton").disabled = false;
+  }
 }
 $("scanChoice").addEventListener("click", startCamera);
 $("browseChoice").addEventListener("click", () => { renderGallery(); showScreen("galleryScreen"); });
