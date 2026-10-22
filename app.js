@@ -70,7 +70,7 @@ function renderGallery(filter="") {
   const f = filter.toLowerCase().trim();
   const found = records.filter(r => `${r.code} ${r.title || ""}`.toLowerCase().includes(f));
   $("galleryGrid").innerHTML = found.map((r,i) => `<button class="poster-card" data-code="${escapeHtml(r.code)}">
-    ${posterArt(r,true)}<div class="poster-caption"><strong>${escapeHtml(r.title || r.code)}</strong><small>${escapeHtml(r.code)}</small></div></button>`).join("");
+    ${posterArt(r,true)}</div></button>`).join("");
     if (!found.length) $("galleryGrid").innerHTML = `<p class="muted">No posters match your search.</p>`;
   $("galleryGrid").querySelectorAll("button[data-code]").forEach(b => b.addEventListener("click", () => lookup(b.dataset.code)));
 }
