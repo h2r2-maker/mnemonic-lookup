@@ -1,5 +1,13 @@
 const CACHE = "mnemonic-lookup-v2";
 const CORE = ["./","./index.html","./styles.css","./app.js","./data.json","./manifest.webmanifest"];
+const ASSETS = [
+  "/",
+  "/index.html",
+  "/styles.css",
+  "/app.js",
+  "/icon-192.png",
+  "/icon-512.png"
+];
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(CORE)));
   self.skipWaiting();
