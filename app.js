@@ -49,8 +49,7 @@ function posterArt(record, compact=false) {
 }
 function showResult(record) {
   if (!record) return showNotFound("");
-  $("resultContent").innerHTML = `<h1>Poster Found</h1>
-    <div class="result-card">${posterArt(record)}<div class="result-details">
+  $("resultContent").innerHTML = `<div class="result-card">${posterArt(record)}<div class="result-details">
       <div class="eyebrow">Mnemonic code</div>
       <div class="code-value">${escapeHtml(record.code)}</div>
       
