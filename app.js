@@ -44,7 +44,7 @@ function escapeHtml(s) {
 }
 function posterArt(record, compact=false) {
  if (record.image) return `<img class="${compact ? "poster-art" : "result-art"}" src="${escapeHtml(record.image)}" alt="${escapeHtml(record.title || record.code)}" onerror="this.style.display='none'">`;
- return `<div class="${compact ? "poster-art" : "poster-art result-placeholder"}"><span class="poster-symbol">▧</span><span>${escapeHtml(record.title || "Poster")}</span><small>Replace with your poster image</small></div>`;
+ return `<div class="${compact ? "poster-art" : "poster-art result-placeholder"}"><span class="poster-symbol">▧</span><span>${Poster}</span><small>Replace with your poster image</small></div>`;
    
 }
 function showResult(record) {
