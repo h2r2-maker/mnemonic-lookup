@@ -51,7 +51,6 @@ function showResult(record) {
   if (!record) return showNotFound("");
   $("resultContent").innerHTML = `<h1>${escapeHtml(record.title || "Poster Found")}</h1>
     <div class="result-card">${posterArt(record)}<div class="result-details">
-      <div class="eyebrow">Mnemonic code</div><div class="code-value">${escapeHtml(record.code)}</div>
       <div class="eyebrow">Quantity</div><div class="quantity">${escapeHtml(record.quantity)}</div>
     </div></div>`;
   previousScreen = "homeScreen";
